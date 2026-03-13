@@ -1,2 +1,6 @@
 # golang_shooter
-Goldilocks DML simulator
+## Goal of this project : 
+- Training of using golang 
+
+## How To Use
+

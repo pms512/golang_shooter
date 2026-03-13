@@ -4,6 +4,8 @@ import (
 	"os"
 	"fmt"
 	"encoding/json"
+	"database/sql"
+	_ "github.com/alexbrainman/odbc"
 )
 
 func ReadConfigFile() map[string]interface{} {
@@ -26,7 +28,7 @@ func ReadConfigFile() map[string]interface{} {
 
 func main() {
 	var config map[string]interface{}
-
+	var version string
 	fmt.Println("=======================")
 	fmt.Println("  Goldilocks Shooter   ")
 	fmt.Println("=======================")
@@ -35,4 +37,22 @@ func main() {
 	if config != nil {
 		fmt.Println("ReadConfigFile() Done!")
 	}
+	connString := fmt.Sprintf("DSN=%s",config["dsn"])
+	db, err := sql.Open("odbc", connString)
+	if err != nil {
+		fmt.Println("Error connecting to DB:", err)
+		panic(err)
+	}
+	defer db.Close()
+
+	fmt.Println("Connection success!")
+
+	err = db.QueryRow("SELECT version FROM X$INSTANCE").Scan(&version)
+
+	if err != nil {
+		fmt.Println("Error querying:", err)
+		panic(err)
+	}
+	fmt.Println("version:", version)
+
 }
