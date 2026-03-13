@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"database/sql"
 	_ "github.com/alexbrainman/odbc"
+	"strings"
 )
 
 func ReadConfigFile() map[string]interface{} {
@@ -26,9 +27,27 @@ func ReadConfigFile() map[string]interface{} {
 	return result
 }
 
+func checkStmtAndParams(tx map[string]interface{}) bool {
+	paramCountInTx := 0
+	paramCountInStmt := 0
+    for key, value := range tx {
+        if strings.HasPrefix(key,"param") {
+            paramCountInTx++
+        } else if key == "stmt" {
+            convertedStmt := value.(string)
+            paramCountInStmt = strings.Count(convertedStmt, "?")
+        }
+    }
+	if paramCountInTx == paramCountInStmt {
+		return true
+	} else {
+		return false
+	}
+}
+
 func main() {
 	var config map[string]interface{}
-	var version string
+//	var version string
 	fmt.Println("=======================")
 	fmt.Println("  Goldilocks Shooter   ")
 	fmt.Println("=======================")
@@ -46,13 +65,29 @@ func main() {
 	defer db.Close()
 
 	fmt.Println("Connection success!")
-
-	err = db.QueryRow("SELECT version FROM X$INSTANCE").Scan(&version)
+/*
+	err = db.QueryRow("").Scan(&version)
 
 	if err != nil {
 		fmt.Println("Error querying:", err)
 		panic(err)
 	}
 	fmt.Println("version:", version)
+*/
 
+	//extract statement and parameter from config
+    transactions := config["transactions"].(map[string]interface{})
+
+	for key, tx := range transactions {
+		convertedTx := tx.(map[string]interface{})
+		fmt.Println("txName:", key)
+		//check statement and get the number of bind parameters
+		isValid := checkStmtAndParams(convertedTx)
+		if isValid != true {
+			fmt.Println("The number of params and the number of bind parameters in statement is different. Please edit config.conf correctly. Exiting..")
+			return
+		}
+	}
+
+	fmt.Println("All processes has been completed. Exiting..")
 }
